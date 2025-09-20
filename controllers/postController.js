@@ -15,7 +15,10 @@ const getAdminPosts = async (req, res) => {
       return res.status(403).json({ message: "Access denied" });
     }
 
-    const posts = await Post.find().populate("createdBy", "name email profileImageUrl");
+    const posts = await Post.find().populate(
+      "createdBy",
+      "name email profileImageUrl"
+    );
     res.status(200).json({ success: true, posts });
   } catch (err) {
     console.error(err);
@@ -48,14 +51,16 @@ const getMemberPosts = async (req, res) => {
 // =========================
 const getAllPostsPublic = async (req, res) => {
   try {
-    const posts = await Post.find().populate("createdBy", "name email profileImageUrl");
+    const posts = await Post.find().populate(
+      "createdBy",
+      "name email profileImageUrl"
+    );
     res.status(200).json({ success: true, posts });
   } catch (err) {
     console.error(err);
     res.status(500).json({ message: "Server error", error: err.message });
   }
 };
-
 
 //@desc     Get task by id
 //@route    GET /api/tasks/:id
@@ -215,28 +220,33 @@ const getUserDashboardPostsData = async (req, res) => {
 
 // Add comment to a post
 const addComment = async (req, res) => {
+  console.log("hiis");
+  
+  const { id } = req.params;
+  const { comment } = req.body;
+  const user = req.user;
+
+  if (!comment || !comment.trim()) {
+    return res.status(400).json({ message: "Comment cannot be empty" });
+  }
+
   try {
-    const { postId } = req.params;
-    const { text } = req.body;
-
-    if (!text || text.trim() === "") {
-      return res.status(400).json({ message: "Comment cannot be empty" });
-    }
-
-    const post = await Post.findById(postId);
+    const post = await Post.findById(id);
     if (!post) return res.status(404).json({ message: "Post not found" });
 
-    post.comments.push({ text, createdBy: req.user._id });
+    const newComment = {
+      user: user._id,
+      text: comment,
+      createdAt: new Date(),
+    };
+
+    post.comments.push(newComment);
     await post.save();
 
-    // Populate comments with user names
-    const updatedPost = await Post.findById(postId)
-      .populate("createdBy", "name")
-      .populate("comments.createdBy", "name");
-
-    res.status(200).json({ post: updatedPost });
+    res.status(201).json({ message: "Comment added", comment: newComment });
   } catch (err) {
-    res.status(500).json({ message: "Server error", error: err.message });
+    console.error(err);
+    res.status(500).json({ message: "Server error" });
   }
 };
 
@@ -254,8 +264,6 @@ const getPostWithComments = async (req, res) => {
     res.status(500).json({ message: "Server error", error: err.message });
   }
 };
-
-
 
 module.exports = {
   getAdminPosts,

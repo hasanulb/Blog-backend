@@ -5,6 +5,7 @@ const { Server } = require("socket.io");
 const path = require("path");
 const connectDB = require("./config/db");
 
+// Routes
 const authRoutes = require("./routes/authRoutes");
 const userRoutes = require("./routes/userRoutes");
 const postRoutes = require("./routes/postRoutes");
@@ -12,20 +13,32 @@ const postRoutes = require("./routes/postRoutes");
 
 const app = express();
 
-// Middleware
+// Middleware to parse JSON
 app.use(express.json());
 
 // CORS setup
+const allowedOrigins = [
+  "http://localhost:5173", // local dev
+  "https://blog-frontend-rbgw.vercel.app", // deployed frontend
+];
+
 app.use(
   require("cors")({
-    origin: process.env.CLIENT_URL || "http://localhost:5173",
+    origin: function (origin, callback) {
+      if (!origin) return callback(null, true); // allow non-browser requests
+      if (allowedOrigins.includes(origin)) {
+        return callback(null, true);
+      } else {
+        return callback(new Error("CORS not allowed"));
+      }
+    },
     methods: ["GET", "POST", "PUT", "DELETE"],
     allowedHeaders: ["Content-Type", "Authorization"],
     credentials: true,
   })
 );
 
-// Connect Database
+// Connect to database
 connectDB();
 
 // Routes
@@ -40,10 +53,10 @@ app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 // Create HTTP server
 const server = http.createServer(app);
 
-// Setup Socket.IO
+// Setup Socket.IO with CORS
 const io = new Server(server, {
   cors: {
-    origin: process.env.CLIENT_URL || "*",
+    origin: allowedOrigins,
     methods: ["GET", "POST"],
   },
 });
