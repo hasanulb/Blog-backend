@@ -5,23 +5,54 @@ const User = require("../models/User");
 //@route    GET /api/tasks/
 //acess     Private
 
-const getPosts = async (req, res) => {
+// =========================
+// Admin: get all posts
+// =========================
+const getAdminPosts = async (req, res) => {
   try {
-    const user = req.user;
-
-    let posts;
-    if (user?.role === "admin") {
-      posts = await Post.find().populate("createdBy", "name email");
-    } else if (user) {
-      posts = await Post.find({ createdBy: user._id }).populate("createdBy", "name email");
-    } else {
-      posts = await Post.find().populate("createdBy", "name email"); // public/home page
+    // Only allow admin
+    if (!req.user || req.user.role !== "admin") {
+      return res.status(403).json({ message: "Access denied" });
     }
 
-    res.json({ status: true, posts });
+    const posts = await Post.find().populate("createdBy", "name email profileImageUrl");
+    res.status(200).json({ success: true, posts });
   } catch (err) {
     console.error(err);
-    res.status(500).json({ message: "server error", error: err.message });
+    res.status(500).json({ message: "Server error", error: err.message });
+  }
+};
+
+// =========================
+// Member: get only own posts
+// =========================
+const getMemberPosts = async (req, res) => {
+  try {
+    if (!req.user) {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+
+    const posts = await Post.find({ createdBy: req.user._id }).populate(
+      "createdBy",
+      "name email profileImageUrl"
+    );
+    res.status(200).json({ success: true, posts });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Server error", error: err.message });
+  }
+};
+
+// =========================
+// Public: get all posts (Home Page)
+// =========================
+const getAllPostsPublic = async (req, res) => {
+  try {
+    const posts = await Post.find().populate("createdBy", "name email profileImageUrl");
+    res.status(200).json({ success: true, posts });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Server error", error: err.message });
   }
 };
 
@@ -183,11 +214,11 @@ const getUserDashboardPostsData = async (req, res) => {
 };
 
 module.exports = {
-  getPosts,
+  getAdminPosts,
+  getMemberPosts,
+  getAllPostsPublic,
   getPostById,
   createPost,
   updatePost,
   deletePost,
-  getDashboardPostsData,
-  getUserDashboardPostsData,
 };
