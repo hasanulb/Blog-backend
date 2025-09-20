@@ -7,37 +7,24 @@ const User = require("../models/User");
 
 const getPosts = async (req, res) => {
   try {
-    const user = req.user; // may be undefined for public access
-    let posts;
+    const user = req.user;
 
-    if (user && user.role === "admin") {
-      // Admin sees all
-      posts = await Post.find().populate(
-        "createdBy",
-        "name email profileImageUrl"
-      );
+    let posts;
+    if (user?.role === "admin") {
+      posts = await Post.find().populate("createdBy", "name email");
     } else if (user) {
-      // Logged-in member sees only own posts
-      posts = await Post.find({ createdBy: user._id }).populate(
-        "createdBy",
-        "name email profileImageUrl"
-      );
+      posts = await Post.find({ createdBy: user._id }).populate("createdBy", "name email");
     } else {
-      // Public (home page) sees all posts
-      posts = await Post.find().populate(
-        "createdBy",
-        "name email profileImageUrl"
-      );
+      posts = await Post.find().populate("createdBy", "name email"); // public/home page
     }
 
-    res.status(200).json({ success: true, posts });
+    res.json({ status: true, posts });
   } catch (err) {
     console.error(err);
-    res
-      .status(500)
-      .json({ success: false, message: "Server error", error: err.message });
+    res.status(500).json({ message: "server error", error: err.message });
   }
 };
+
 
 //@desc     Get task by id
 //@route    GET /api/tasks/:id
