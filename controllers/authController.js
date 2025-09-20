@@ -94,13 +94,11 @@ const loginUser = async (req, res) => {
 //acess     Private (requires JWT)
 const getUserProfile = async (req, res) => {
   try {
-    const user = await User.findById(req.user.id).select("-password");
-    if (!user) {
-      return res.status(401).json({ message: "user not found" });
-    }
-    res.json(user);
+    // req.user is populated by protect middleware
+    res.json({ user: req.user });
   } catch (error) {
-    res.status(500).json({ message: " server error", error: error.message });
+    console.error(error);
+    res.status(500).json({ message: "Server error" });
   }
 };
 
@@ -109,31 +107,44 @@ const getUserProfile = async (req, res) => {
 //acess     Private (requires JWT)
 const updateUserProfile = async (req, res) => {
   try {
-    const user = await User.findById(req.user.id);
+    const user = await User.findById(req.user._id);
 
-    if (!user) {
-      return res.status(404).json({ message: " User not found " });
-    }
+    if (!user) return res.status(404).json({ message: "User not found" });
 
-    user.name = req.body.name || user.name;
-    user.email = req.body.email || user.email;
+    const { name, email, profileImageUrl, currentPassword, newPassword } =
+      req.body;
 
-    if (req.body.password) {
+    // Update basic info
+    if (name) user.name = name;
+    if (email) user.email = email;
+    if (profileImageUrl) user.profileImageUrl = profileImageUrl;
+
+    // Handle password change
+    if (currentPassword && newPassword) {
+      const isMatch = await bcrypt.compare(currentPassword, user.password);
+      if (!isMatch) {
+        return res
+          .status(400)
+          .json({ message: "Current password is incorrect" });
+      }
       const salt = await bcrypt.genSalt(10);
-      user.password = await bcrypt.hash(req.body.password, salt);
+      user.password = await bcrypt.hash(newPassword, salt);
     }
 
-    const updatedUser = await user.save();
+    await user.save();
 
     res.json({
-      _id: updatedUser._id,
-      name: updatedUser.name,
-      email: updatedUser.email,
-      role: updatedUser.role,
-      token: generateToken(updatedUser._id),
+      message: "Profile updated successfully",
+      user: {
+        _id: user._id,
+        name: user.name,
+        email: user.email,
+        profileImageUrl: user.profileImageUrl,
+      },
     });
   } catch (error) {
-    res.status(500).json({ message: " server error", error: error.message });
+    console.error(error);
+    res.status(500).json({ message: "Server error" });
   }
 };
 
