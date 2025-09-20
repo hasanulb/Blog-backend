@@ -3,6 +3,7 @@ const { protect, adminOnly } = require("../middlewares/authMiddleware");
 const {
   getAllUsers,
   getUserById,
+  createUserByAdmin,
   updateUser,
   deleteUser,
 } = require("../controllers/userController");
@@ -11,6 +12,8 @@ const router = express.Router();
 
 // GET all users (admin only)
 router.get("/", protect, adminOnly, getAllUsers);
+
+router.post("/", protect, adminOnly, createUserByAdmin);
 
 // GET single user (admin only)
 router.get("/:id", protect, adminOnly, getUserById);
