@@ -1,102 +1,66 @@
-// const Post = require("../models/Posts");
-// const User = require("../models/User");
-// const bcrypt = require("bcryptjs");
-// const { param } = require("../routes/authRoutes");
-
-// //@desc     Get all users (Admin only)
-// //@route    GET /api/users/
-// //acess     Private (Admin)
-// const getUsers = async (req,res) =>{
-//     try {
-        
-//         const users = await User.find({ role:'member'}).select("-password");
-
-
-
-//         // Add task count to each user
-//         const usersWithTaskCounts = await Promise.all(users.map(async (user) => {
-//             const pendingTasks = await Task.countDocuments({ assignedTo: user._id, status: "Pending"});
-//             const inProgressTasks = await Task.countDocuments({ assignedTo: user._id, status: "In Progress"}); 
-//             const completedTasks = await Task.countDocuments({ assignedTo: user._id, status: "Completed"}); 
-
-
-
-//             return{
-//                 ...user._doc, // Include all existing user data
-//                 pendingTasks,
-//                 inProgressTasks,
-//                 completedTasks
-//             }
-//      }));
-//      res.json(usersWithTaskCounts)
-       
-//     } catch (error) {
-//     res.status(500).json({ message: " server error", error: error.message });
-        
-//     }
-// }
-
-// //@desc     Get user by id
-// //@route    GET /api/users/:id
-// //acess     Private 
-// const getUserById = async (req,res) =>{
-//     try {
-//         const user = await User.findById(req.params.id).select("-password");
-//         if(!user) return res.status(404).json({ message: "user not found"});
-//         res.json(user)
-//     } catch (error) {
-//     res.status(500).json({ message: " server error", error: error.message });
-        
-//     }
-// }
-
-// module.exports = { getUsers, getUserById };
-const Post = require("../models/Posts");
 const User = require("../models/User");
+const bcrypt = require("bcryptjs");
 
-//@desc     Get all users (Admin only)
-//@route    GET /api/users/
-//access    Private (Admin)
-const getUsers = async (req, res) => {
+// GET all users
+const getAllUsers = async (req, res) => {
   try {
-    const users = await User.find({ role: "member" }).select("-password");
-
-    // Add posts for each user
-    const usersWithPosts = await Promise.all(
-      users.map(async (user) => {
-        const posts = await Post.find({ author: user._id }); // assuming 'author' field links post to user
-
-        return {
-          ...user._doc, // include existing user data
-          posts,
-        };
-      })
-    );
-
-    res.json(usersWithPosts);
-  } catch (error) {
-    res.status(500).json({ message: "server error", error: error.message });
+    const users = await User.find().select("-password");
+    res.status(200).json(users);
+  } catch (err) {
+    res.status(500).json({ message: "Server error", error: err.message });
   }
 };
 
-//@desc     Get user by id
-//@route    GET /api/users/:id
-//access    Private
+// GET user by ID
 const getUserById = async (req, res) => {
   try {
     const user = await User.findById(req.params.id).select("-password");
-    if (!user) return res.status(404).json({ message: "user not found" });
-
-    // Include posts for this user
-    const posts = await Post.find({ author: user._id });
-
-    res.json({
-      ...user._doc,
-      posts,
-    });
-  } catch (error) {
-    res.status(500).json({ message: "server error", error: error.message });
+    if (!user) return res.status(404).json({ message: "User not found" });
+    res.status(200).json(user);
+  } catch (err) {
+    res.status(500).json({ message: "Server error", error: err.message });
   }
 };
 
-module.exports = { getUsers, getUserById };
+// UPDATE user (admin only)
+const updateUser = async (req, res) => {
+  try {
+    const user = await User.findById(req.params.id);
+    if (!user) return res.status(404).json({ message: "User not found" });
+
+    const { name, email, role, password } = req.body;
+
+    user.name = name || user.name;
+    user.email = email || user.email;
+    user.role = role || user.role;
+
+    // Only hash password if provided
+    if (password && password.trim() !== "") {
+      const salt = await bcrypt.genSalt(10);
+      user.password = await bcrypt.hash(password, salt);
+    }
+
+    const updatedUser = await user.save();
+    res.status(200).json({
+      message: "User updated successfully",
+      user: updatedUser,
+    });
+  } catch (err) {
+    res.status(500).json({ message: "Server error", error: err.message });
+  }
+};
+
+// DELETE user
+const deleteUser = async (req, res) => {
+  try {
+    const user = await User.findById(req.params.id);
+    if (!user) return res.status(404).json({ message: "User not found" });
+
+    await user.deleteOne();
+    res.status(200).json({ message: "User deleted successfully" });
+  } catch (err) {
+    res.status(500).json({ message: "Server error", error: err.message });
+  }
+};
+
+module.exports = { getAllUsers, getUserById, updateUser, deleteUser };

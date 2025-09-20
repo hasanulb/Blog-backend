@@ -1,11 +1,24 @@
 const express = require("express");
-const { adminOnly, protect } = require("../middlewares/authMiddleware");
-const { getUsers, getUserById } = require("../controllers/userController");
+const { protect, adminOnly } = require("../middlewares/authMiddleware");
+const {
+  getAllUsers,
+  getUserById,
+  updateUser,
+  deleteUser,
+} = require("../controllers/userController");
 
 const router = express.Router();
 
-// User Management Function
-router.get("/", protect, adminOnly, getUsers); //Get all users (Admin only)
-router.get("/:id", protect, getUserById); // Get a specific user
+// GET all users (admin only)
+router.get("/", protect, adminOnly, getAllUsers);
+
+// GET single user (admin only)
+router.get("/:id", protect, adminOnly, getUserById);
+
+// PUT to update user (admin only)
+router.put("/:id", protect, adminOnly, updateUser);
+
+// DELETE user (admin only)
+router.delete("/:id", protect, adminOnly, deleteUser);
 
 module.exports = router;
