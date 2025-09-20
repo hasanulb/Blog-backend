@@ -5,23 +5,37 @@ const User = require("../models/User");
 //@route    GET /api/tasks/
 //acess     Private
 
-const getPosts = async (req, res, next) => {
+const getPosts = async (req, res) => {
   try {
-    const user = req.user; // might be undefined for public access
+    const user = req.user; // may be undefined for public access
     let posts;
 
     if (user && user.role === "admin") {
-      posts = await Post.find().populate("createdBy", "name email");
+      // Admin sees all
+      posts = await Post.find().populate(
+        "createdBy",
+        "name email profileImageUrl"
+      );
     } else if (user) {
-      posts = await Post.find({ createdBy: user._id }).populate("createdBy", "name email");
+      // Logged-in member sees only own posts
+      posts = await Post.find({ createdBy: user._id }).populate(
+        "createdBy",
+        "name email profileImageUrl"
+      );
     } else {
-      posts = await Post.find({}).populate("createdBy", "name email"); // public: return all posts
+      // Public (home page) sees all posts
+      posts = await Post.find().populate(
+        "createdBy",
+        "name email profileImageUrl"
+      );
     }
 
-    res.json({ status: true, posts });
+    res.status(200).json({ success: true, posts });
   } catch (err) {
     console.error(err);
-    res.status(500).json({ message: "server error", error: err.message });
+    res
+      .status(500)
+      .json({ success: false, message: "Server error", error: err.message });
   }
 };
 
@@ -36,12 +50,16 @@ const getPostById = async (req, res) => {
     );
 
     if (!post) {
-      return res.status(404).json({ success: false, message: "Post not found" });
+      return res
+        .status(404)
+        .json({ success: false, message: "Post not found" });
     }
 
     res.status(200).json({ success: true, post });
   } catch (error) {
-    res.status(500).json({ success: false, message: "Server error", error: error.message });
+    res
+      .status(500)
+      .json({ success: false, message: "Server error", error: error.message });
   }
 };
 
@@ -75,7 +93,9 @@ const updatePost = async (req, res) => {
     const post = await Post.findById(req.params.id);
 
     if (!post) {
-      return res.status(404).json({ success: false, message: "Post not found" });
+      return res
+        .status(404)
+        .json({ success: false, message: "Post not found" });
     }
 
     post.title = req.body.title || post.title;
@@ -90,7 +110,9 @@ const updatePost = async (req, res) => {
       post: updatedPost,
     });
   } catch (error) {
-    res.status(500).json({ success: false, message: "Server error", error: error.message });
+    res
+      .status(500)
+      .json({ success: false, message: "Server error", error: error.message });
   }
 };
 
@@ -102,14 +124,20 @@ const deletePost = async (req, res) => {
     const post = await Post.findById(req.params.id);
 
     if (!post) {
-      return res.status(404).json({ success: false, message: "Post not found" });
+      return res
+        .status(404)
+        .json({ success: false, message: "Post not found" });
     }
 
     await post.deleteOne();
 
-    res.status(200).json({ success: true, message: "Post deleted successfully" });
+    res
+      .status(200)
+      .json({ success: true, message: "Post deleted successfully" });
   } catch (error) {
-    res.status(500).json({ success: false, message: "Server error", error: error.message });
+    res
+      .status(500)
+      .json({ success: false, message: "Server error", error: error.message });
   }
 };
 
