@@ -213,6 +213,50 @@ const getUserDashboardPostsData = async (req, res) => {
   }
 };
 
+// Add comment to a post
+const addComment = async (req, res) => {
+  try {
+    const { postId } = req.params;
+    const { text } = req.body;
+
+    if (!text || text.trim() === "") {
+      return res.status(400).json({ message: "Comment cannot be empty" });
+    }
+
+    const post = await Post.findById(postId);
+    if (!post) return res.status(404).json({ message: "Post not found" });
+
+    post.comments.push({ text, createdBy: req.user._id });
+    await post.save();
+
+    // Populate comments with user names
+    const updatedPost = await Post.findById(postId)
+      .populate("createdBy", "name")
+      .populate("comments.createdBy", "name");
+
+    res.status(200).json({ post: updatedPost });
+  } catch (err) {
+    res.status(500).json({ message: "Server error", error: err.message });
+  }
+};
+
+// Fetch a single post with comments
+const getPostWithComments = async (req, res) => {
+  try {
+    const post = await Post.findById(req.params.id)
+      .populate("createdBy", "name")
+      .populate("comments.createdBy", "name");
+
+    if (!post) return res.status(404).json({ message: "Post not found" });
+
+    res.status(200).json({ post });
+  } catch (err) {
+    res.status(500).json({ message: "Server error", error: err.message });
+  }
+};
+
+
+
 module.exports = {
   getAdminPosts,
   getMemberPosts,
@@ -221,4 +265,6 @@ module.exports = {
   createPost,
   updatePost,
   deletePost,
+  addComment,
+  getPostWithComments,
 };

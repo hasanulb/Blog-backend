@@ -9,6 +9,7 @@ const {
   createPost,
   updatePost,
   deletePost,
+  addComment, getPostWithComments
 } = require("../controllers/postController");
 
 router.get("/admin", protect, getAdminPosts);
@@ -18,5 +19,7 @@ router.get("/:id",  getPostById);
 router.post("/", protect, createPost);
 router.put("/:id", protect, updatePost);
 router.delete("/:id", protect, deletePost);
+router.get("/:id/comments", getPostWithComments);
+router.post("/:id/comments", protect, addComment);
 
 module.exports = router;
