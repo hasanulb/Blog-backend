@@ -106,7 +106,7 @@ app.use(express.json());
 // ✅ CORS setup
 const allowedOrigins = [
   "http://localhost:5173", // local dev frontend
-  "https://blog-frontend-rbgw.vercel.app", // deployed frontend
+  "https://blog-frontend-five-rouge.vercel.app", // deployed frontend
 ];
 
 app.use(
