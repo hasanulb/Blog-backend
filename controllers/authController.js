@@ -7,9 +7,9 @@ const generateToken = (userId) => {
   return jwt.sign({ id: userId }, process.env.JWT_SECRET, { expiresIn: "7d" });
 };
 
-//@desc     Register a new user
-//@route    POST api/auth/register
-//acess     Public
+// @desc     Register a new user
+// @route    POST api/auth/register
+// acess     Public
 const registerUser = async (req, res) => {
   const { name, email, password, adminInviteToken, profileImageUrl } = req.body;
 
@@ -28,10 +28,15 @@ const registerUser = async (req, res) => {
       role = "admin";
     }
 
+    // Hash the password
+    const salt = await bcrypt.genSalt(10);
+    const hashedPassword = await bcrypt.hash(password, salt);
+    console.log("password", hashedPassword);
+
     const user = await User.create({
       name,
       email,
-      password,
+      password: hashedPassword,
       role,
       profileImageUrl,
     });
@@ -54,6 +59,7 @@ const registerUser = async (req, res) => {
     res.status(500).json({ message: "Server error", error });
   }
 };
+
 
 //@desc     Login user
 //@route    POST api/auth/login

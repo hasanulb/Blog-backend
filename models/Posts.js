@@ -13,7 +13,7 @@ const postSchema = new mongoose.Schema(
     postImageUrl: String,
     isPublished: { type: Boolean, default: true },
     createdBy: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
-    comments: [commentSchema], // Embed comments
+    comments: [commentSchema], 
   },
   { timestamps: true }
 );

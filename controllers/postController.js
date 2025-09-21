@@ -10,7 +10,6 @@ const User = require("../models/User");
 // =========================
 const getAdminPosts = async (req, res) => {
   try {
-    // Only allow admin
     if (!req.user || req.user.role !== "admin") {
       return res.status(403).json({ message: "Access denied" });
     }
@@ -164,59 +163,7 @@ const deletePost = async (req, res) => {
   }
 };
 
-// @desc     Dashboard data (All Users' Posts)
-// @route    GET /api/posts/dashboard-data
-// @access   Private/Admin
-const getDashboardPostsData = async (req, res) => {
-  try {
-    // Total posts
-    const totalPosts = await Post.countDocuments();
 
-    // Fetch recent 10 posts across all users
-    const recentPosts = await Post.find()
-      .sort({ createdAt: -1 })
-      .limit(10)
-      .populate("createdBy", "fullName email") // optional: show author info
-      .select("title description createdBy createdAt");
-
-    res.status(200).json({
-      statistics: {
-        totalPosts,
-      },
-      recentPosts,
-    });
-  } catch (error) {
-    res.status(500).json({ message: "server error", error: error.message });
-  }
-};
-
-// @desc     Dashboard data (Logged-in User's Posts)
-// @route    GET /api/posts/user-dashboard-data
-// @access   Private
-const getUserDashboardPostsData = async (req, res) => {
-  try {
-    const userId = req.user._id;
-
-    // Total posts by user
-    const totalPosts = await Post.countDocuments({ createdBy: userId });
-
-    // Fetch recent 10 posts for this user
-    const recentPosts = await Post.find({ createdBy: userId })
-      .sort({ createdAt: -1 })
-      .limit(10)
-      .populate("createdBy", "fullName email")
-      .select("title description createdBy createdAt");
-
-    res.status(200).json({
-      statistics: {
-        totalPosts,
-      },
-      recentPosts,
-    });
-  } catch (error) {
-    res.status(500).json({ message: "server error", error: error.message });
-  }
-};
 
 // Add comment to a post
 const addComment = async (req, res) => {
@@ -254,8 +201,8 @@ const addComment = async (req, res) => {
 const getPostWithComments = async (req, res) => {
   try {
     const post = await Post.findById(req.params.id)
-      .populate("createdBy", "name")
-      .populate("comments.createdBy", "name");
+    .populate("createdBy", "name email")
+    .populate("comments.user", "name email");
 
     if (!post) return res.status(404).json({ message: "Post not found" });
 
